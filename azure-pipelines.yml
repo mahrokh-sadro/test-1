@@ -6,44 +6,35 @@
 trigger:
 - master
 
-pool:
-  vmImage: ubuntu-latest
-  demands: npm
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: BuildJob
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '16.x'
+        displayName: 'Install Node.js'
 
-steps:
-  - task: Npm@0
-    displayName: 'npm install'
-    inputs:
-      arguments: '--force'
+      - script: |
+          npm install -g @angular/cli
+          npm install
+          ng build --prod
+        displayName: 'npm install and build'
+      - task: ArchiveFiles@2
+        displayName: 'Archive files'
+        inputs:
+          rootFolderOrFile: '$(System.DefaultWorkingDirectory)/HelloWorld/dist/HelloWorld/'
+          includeRootFolder: false
+          archiveType: zip
+          archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+          replaceExistingArchive: true
 
-  - task: Npm@1
-    displayName: 'npm install angular cli'
-    inputs:
-      command: custom
-      verbose: false
-      customCommand: 'install @angular/cli'
-
-  - task: Npm@1
-    displayName: 'npm build'
-    inputs:
-      command: custom
-      verbose: false
-      customCommand: 'run build-prod'
-
-  - task: ArchiveFiles@1
-    displayName: 'Archive files '
-    inputs:
-      rootFolder: '$(System.DefaultWorkingDirectory)/dist/angularHeroesFirebase' #name of your project on angular.json .defaultProject value
-      includeRootFolder: false
-
-  - task: CopyFiles@2
-    displayName: 'Copy File to: $(TargetFolder)'
-    inputs:
-      SourceFolder: '$(Build.ArtifactStagingDirectory)'
-      Contents: '$(Build.BuildId).zip'
-      TargetFolder: '$(Build.ArtifactStagingDirectory)\ArtifactsToBePublished'
-
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Artifact: drop'
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)\ArtifactsToBePublished'
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+          ArtifactName: 'drop'
+          publishLocation: 'Container'
