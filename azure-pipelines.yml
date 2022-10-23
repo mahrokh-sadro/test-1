@@ -23,6 +23,7 @@ stages:
           npm install -g @angular/cli@14.2.6
           npm install
           ng build 
+          ng test
         displayName: 'npm install and build'
       - task: ArchiveFiles@2
         displayName: 'Archive files'
